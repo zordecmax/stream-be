@@ -9,7 +9,10 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
   // Get configuration
-  const port = configService.get<number>('app.port') || 3000;
+  // const port = configService.get<number>('app.port') || 3000;
+  const appPortFromConfig = configService.get<number>('app.port');
+
+  const port = process.env.PORT || appPortFromConfig || 3000;
   const apiPrefix = configService.get<string>('app.apiPrefix') || 'api';
   const corsEnabled = configService.get<boolean>('app.corsEnabled');
 
@@ -34,7 +37,7 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   logger.log(
     `🚀 Application is running on: http://localhost:${port}/${apiPrefix}`,
   );
