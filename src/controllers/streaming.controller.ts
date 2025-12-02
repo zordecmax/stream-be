@@ -12,6 +12,15 @@ import {
   ParseUUIDPipe,
   UseGuards,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+  ApiBody,
+} from '@nestjs/swagger';
 import { StreamingService } from '../services/streaming.service';
 import {
   CreateStreamingDto,
@@ -24,6 +33,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
  * Controller for streaming content endpoints
  * Handles all HTTP requests related to streaming content
  */
+@ApiTags('streaming')
 @Controller('streaming')
 export class StreamingController {
   constructor(private readonly streamingService: StreamingService) {}
@@ -35,7 +45,17 @@ export class StreamingController {
    */
   @Post()
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create new streaming content' })
+  @ApiBody({ type: CreateStreamingDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Content successfully created',
+    type: StreamingResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 400, description: 'Bad request - validation error' })
   async create(
     @Body() createStreamingDto: CreateStreamingDto,
   ): Promise<StreamingResponseDto> {

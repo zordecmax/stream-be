@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './modules/app.module';
 
 async function bootstrap() {
@@ -36,6 +37,39 @@ async function bootstrap() {
       },
     }),
   );
+
+  // Setup Swagger/OpenAPI documentation
+  const config = new DocumentBuilder()
+    .setTitle('Streaming Service API')
+    .setDescription(
+      'Backend API for streaming service with VOD content and live streaming support',
+    )
+    .setVersion('1.0')
+    .addTag('auth', 'Authentication endpoints')
+    .addTag('streaming', 'VOD content management')
+    .addTag('live-streams', 'Live streaming with Mux')
+    .addTag('users', 'User management')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth', // This name will be used in controllers
+    )
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup(`${apiPrefix}/docs`, app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      tagsSorter: 'alpha',
+      operationsSorter: 'alpha',
+    },
+  });
 
   await app.listen(port, '0.0.0.0');
   logger.log(

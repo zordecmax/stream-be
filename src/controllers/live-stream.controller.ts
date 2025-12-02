@@ -11,6 +11,14 @@ import {
   HttpStatus,
   Put,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiBody,
+} from '@nestjs/swagger';
 import { LiveStreamService } from '../services/live-stream.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateLiveStreamDto } from '../dto/create-live-stream.dto';
@@ -22,6 +30,7 @@ import {
 /**
  * Controller for live streaming endpoints
  */
+@ApiTags('live-streams')
 @Controller('live-streams')
 export class LiveStreamController {
   constructor(private readonly liveStreamService: LiveStreamService) {}
@@ -32,7 +41,17 @@ export class LiveStreamController {
    */
   @Post()
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create a new live stream' })
+  @ApiBody({ type: CreateLiveStreamDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Live stream successfully created with Mux',
+    type: LiveStreamResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 400, description: 'Bad request - validation error' })
   async createLiveStream(
     @Body() createLiveStreamDto: CreateLiveStreamDto,
     @Request() req: any,
