@@ -108,10 +108,21 @@ export class LiveStreamService {
    * Delete live stream
    */
   async deleteLiveStream(id: string, userId: string): Promise<void> {
+    this.logger.log(`Deleting stream ${id} for user ${userId}`);
     const stream = await this.getLiveStreamById(id);
 
-    // Check if user owns the stream with null safety
-    if (!stream || !stream.user || stream.user.id !== userId) {
+    this.logger.log(`Found stream: ${stream.id}, owned by: ${stream.user?.id}`);
+
+    // Check if user owns the stream
+    if (!stream.user) {
+      this.logger.error(`Stream ${id} has no user relation loaded`);
+      throw new NotFoundException('Stream not found or access denied');
+    }
+
+    if (stream.user.id !== userId) {
+      this.logger.warn(
+        `User ${userId} attempted to delete stream ${id} owned by ${stream.user.id}`,
+      );
       throw new NotFoundException('Stream not found or access denied');
     }
 
@@ -125,6 +136,7 @@ export class LiveStreamService {
 
     // Delete from database
     await this.liveStreamRepository.remove(stream);
+    this.logger.log(`Stream ${id} deleted successfully`);
   }
 
   /**
@@ -145,30 +157,59 @@ export class LiveStreamService {
    * Activate stream
    */
   async activateStream(id: string, userId: string): Promise<LiveStreamEntity> {
+    this.logger.log(`Activating stream ${id} for user ${userId}`);
     const stream = await this.getLiveStreamById(id);
 
-    // Additional null checks
-    if (!stream || !stream.user || stream.user.id !== userId) {
+    this.logger.log(`Found stream: ${stream.id}, owned by: ${stream.user?.id}`);
+
+    // Check if user owns the stream
+    if (!stream.user) {
+      this.logger.error(`Stream ${id} has no user relation loaded`);
+      throw new NotFoundException('Stream not found or access denied');
+    }
+
+    if (stream.user.id !== userId) {
+      this.logger.warn(
+        `User ${userId} attempted to activate stream ${id} owned by ${stream.user.id}`,
+      );
       throw new NotFoundException('Stream not found or access denied');
     }
 
     stream.isActive = true;
-    return await this.liveStreamRepository.save(stream);
+    const saved = await this.liveStreamRepository.save(stream);
+    this.logger.log(`Stream ${id} activated successfully`);
+    return saved;
   }
 
   /**
    * Deactivate stream
    */
-  async deactivateStream(id: string, userId: string): Promise<LiveStreamEntity> {
+  async deactivateStream(
+    id: string,
+    userId: string,
+  ): Promise<LiveStreamEntity> {
+    this.logger.log(`Deactivating stream ${id} for user ${userId}`);
     const stream = await this.getLiveStreamById(id);
 
-    // Additional null checks
-    if (!stream || !stream.user || stream.user.id !== userId) {
+    this.logger.log(`Found stream: ${stream.id}, owned by: ${stream.user?.id}`);
+
+    // Check if user owns the stream
+    if (!stream.user) {
+      this.logger.error(`Stream ${id} has no user relation loaded`);
+      throw new NotFoundException('Stream not found or access denied');
+    }
+
+    if (stream.user.id !== userId) {
+      this.logger.warn(
+        `User ${userId} attempted to deactivate stream ${id} owned by ${stream.user.id}`,
+      );
       throw new NotFoundException('Stream not found or access denied');
     }
 
     stream.isActive = false;
-    return await this.liveStreamRepository.save(stream);
+    const saved = await this.liveStreamRepository.save(stream);
+    this.logger.log(`Stream ${id} deactivated successfully`);
+    return saved;
   }
 
   /**
