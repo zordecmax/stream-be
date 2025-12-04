@@ -110,8 +110,8 @@ export class LiveStreamService {
   async deleteLiveStream(id: string, userId: string): Promise<void> {
     const stream = await this.getLiveStreamById(id);
 
-    // Check if user owns the stream
-    if (stream.user.id !== userId) {
+    // Check if user owns the stream with null safety
+    if (!stream || !stream.user || stream.user.id !== userId) {
       throw new NotFoundException('Stream not found or access denied');
     }
 
@@ -147,7 +147,8 @@ export class LiveStreamService {
   async activateStream(id: string, userId: string): Promise<LiveStreamEntity> {
     const stream = await this.getLiveStreamById(id);
 
-    if (stream.user.id !== userId) {
+    // Additional null checks
+    if (!stream || !stream.user || stream.user.id !== userId) {
       throw new NotFoundException('Stream not found or access denied');
     }
 
@@ -161,7 +162,8 @@ export class LiveStreamService {
   async deactivateStream(id: string, userId: string): Promise<LiveStreamEntity> {
     const stream = await this.getLiveStreamById(id);
 
-    if (stream.user.id !== userId) {
+    // Additional null checks
+    if (!stream || !stream.user || stream.user.id !== userId) {
       throw new NotFoundException('Stream not found or access denied');
     }
 
