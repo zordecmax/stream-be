@@ -142,6 +142,20 @@ export class LiveStreamService {
   }
 
   /**
+   * Activate stream
+   */
+  async activateStream(id: string, userId: string): Promise<LiveStreamEntity> {
+    const stream = await this.getLiveStreamById(id);
+
+    if (stream.user.id !== userId) {
+      throw new NotFoundException('Stream not found or access denied');
+    }
+
+    stream.isActive = true;
+    return await this.liveStreamRepository.save(stream);
+  }
+
+  /**
    * Deactivate stream
    */
   async deactivateStream(id: string, userId: string): Promise<LiveStreamEntity> {
