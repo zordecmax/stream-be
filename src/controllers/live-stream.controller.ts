@@ -58,7 +58,7 @@ export class LiveStreamController {
   ): Promise<LiveStreamResponseDto> {
     const stream = await this.liveStreamService.createLiveStream(
       createLiveStreamDto,
-      req.user,
+      req.user.userId,
     );
 
     return new LiveStreamResponseDto({

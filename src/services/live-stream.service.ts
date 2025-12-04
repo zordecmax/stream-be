@@ -39,9 +39,9 @@ export class LiveStreamService {
    */
   async createLiveStream(
     createLiveStreamDto: CreateLiveStreamDto,
-    user: UserEntity,
+    userId: string,
   ): Promise<LiveStreamEntity> {
-    this.logger.log(`Creating live stream for user ${user.email}`);
+    this.logger.log(`Creating live stream for user ${userId}`);
 
     // Create Mux live stream
     const muxStream = await this.mux.video.liveStreams.create({
@@ -51,7 +51,7 @@ export class LiveStreamService {
 
     this.logger.log(`Mux stream created: ${muxStream.id}`);
 
-    // Save to database
+    // Save to database with user ID
     const liveStream = this.liveStreamRepository.create({
       muxStreamId: muxStream.id,
       streamKey: muxStream.stream_key || '',
@@ -59,11 +59,17 @@ export class LiveStreamService {
       title: createLiveStreamDto.title,
       description: createLiveStreamDto.description,
       status: muxStream.status || 'idle',
-      user,
+      user: { id: userId } as UserEntity, // Set user by ID
       muxCreatedAt: muxStream.created_at,
     });
 
-    return await this.liveStreamRepository.save(liveStream);
+    const savedStream = await this.liveStreamRepository.save(liveStream);
+    
+    // Fetch with user relation loaded
+    return await this.liveStreamRepository.findOne({
+      where: { id: savedStream.id },
+      relations: ['user'],
+    }) as LiveStreamEntity;
   }
 
   /**
@@ -158,19 +164,36 @@ export class LiveStreamService {
    */
   async activateStream(id: string, userId: string): Promise<LiveStreamEntity> {
     this.logger.log(`Activating stream ${id} for user ${userId}`);
-    const stream = await this.getLiveStreamById(id);
+    
+    // Fetch stream with user relation explicitly
+    const stream = await this.liveStreamRepository.findOne({
+      where: { id },
+      relations: ['user'],
+    });
 
-    this.logger.log(`Found stream: ${stream.id}, owned by: ${stream.user?.id}`);
-
-    // Check if user owns the stream
-    if (!stream.user) {
-      this.logger.error(`Stream ${id} has no user relation loaded`);
-      throw new NotFoundException('Stream not found or access denied');
+    if (!stream) {
+      this.logger.warn(`Stream ${id} not found in database`);
+      throw new NotFoundException('Stream not found');
     }
 
+    this.logger.log(
+      `Found stream: ${stream.id}, user_id: ${stream.user?.id || 'NULL'}`,
+    );
+
+    // Check if user relation exists
+    if (!stream.user) {
+      this.logger.error(
+        `CRITICAL: Stream ${id} has no associated user in database. This is a data integrity issue.`,
+      );
+      throw new NotFoundException(
+        'Stream has no associated user. Please contact support.',
+      );
+    }
+
+    // Check if user owns the stream
     if (stream.user.id !== userId) {
       this.logger.warn(
-        `User ${userId} attempted to activate stream ${id} owned by ${stream.user.id}`,
+        `Access denied: User ${userId} attempted to activate stream ${id} owned by ${stream.user.id}`,
       );
       throw new NotFoundException('Stream not found or access denied');
     }
