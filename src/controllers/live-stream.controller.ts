@@ -89,6 +89,14 @@ export class LiveStreamController {
    */
   @Get('my')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get my live streams' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of user live streams (includes stream keys)',
+    type: [LiveStreamResponseDto],
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getMyLiveStreams(
     @Request() req: any,
   ): Promise<LiveStreamResponseDto[]> {
@@ -126,6 +134,12 @@ export class LiveStreamController {
    * Get all active live streams (public)
    */
   @Get('active')
+  @ApiOperation({ summary: 'Get all active live streams' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of active live streams',
+    type: [PublicLiveStreamResponseDto],
+  })
   async getActiveLiveStreams(): Promise<PublicLiveStreamResponseDto[]> {
     const streams = await this.liveStreamService.getActiveLiveStreams();
 
@@ -137,10 +151,12 @@ export class LiveStreamController {
           title: stream.title,
           description: stream.description,
           status: stream.status,
-          user: {
-            id: stream.user.id,
-            name: stream.user.name,
-          },
+          user: stream.user
+            ? {
+                id: stream.user.id,
+                name: stream.user.name,
+              }
+            : undefined,
           playbackUrl: this.liveStreamService.getPlaybackUrl(stream.playbackId),
           createdAt: stream.createdAt,
         }),
@@ -152,10 +168,22 @@ export class LiveStreamController {
    * Get live stream by ID (public)
    */
   @Get(':id')
+  @ApiOperation({ summary: 'Get live stream by ID' })
+  @ApiParam({ name: 'id', description: 'Live stream UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Live stream found',
+    type: PublicLiveStreamResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Live stream not found' })
   async getLiveStreamById(
     @Param('id') id: string,
   ): Promise<PublicLiveStreamResponseDto> {
     const stream = await this.liveStreamService.getLiveStreamById(id);
+
+    if (!stream) {
+      throw new Error('Live stream not found');
+    }
 
     return new PublicLiveStreamResponseDto({
       id: stream.id,
@@ -163,10 +191,12 @@ export class LiveStreamController {
       title: stream.title,
       description: stream.description,
       status: stream.status,
-      user: {
-        id: stream.user.id,
-        name: stream.user.name,
-      },
+      user: stream.user
+        ? {
+            id: stream.user.id,
+            name: stream.user.name,
+          }
+        : undefined,
       playbackUrl: this.liveStreamService.getPlaybackUrl(stream.playbackId),
       createdAt: stream.createdAt,
     });
@@ -178,7 +208,13 @@ export class LiveStreamController {
    */
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a live stream' })
+  @ApiParam({ name: 'id', description: 'Live stream UUID' })
+  @ApiResponse({ status: 204, description: 'Live stream deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Live stream not found or access denied' })
   async deleteLiveStream(
     @Param('id') id: string,
     @Request() req: any,
@@ -192,6 +228,16 @@ export class LiveStreamController {
    */
   @Put(':id/deactivate')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Deactivate a live stream' })
+  @ApiParam({ name: 'id', description: 'Live stream UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Live stream deactivated successfully',
+    type: LiveStreamResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Live stream not found or access denied' })
   async deactivateLiveStream(
     @Param('id') id: string,
     @Request() req: any,
