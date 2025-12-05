@@ -199,6 +199,7 @@ export class LiveStreamService {
     }
 
     stream.isActive = true;
+    stream.status = 'active';
     const saved = await this.liveStreamRepository.save(stream);
     this.logger.log(`Stream ${id} activated successfully`);
     return saved;
@@ -230,6 +231,7 @@ export class LiveStreamService {
     }
 
     stream.isActive = false;
+    stream.status = 'idle';
     const saved = await this.liveStreamRepository.save(stream);
     this.logger.log(`Stream ${id} deactivated successfully`);
     return saved;
